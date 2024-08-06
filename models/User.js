@@ -21,7 +21,6 @@ const UserSchema = new mongoose.Schema({
   restaurant_name:{
     type: String,
     required: true,
-    unique: true,
   },
   address:{
     type: String,
