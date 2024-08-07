@@ -14,10 +14,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  role: {
-    type: String,
-    enum: ['Admin'],
-  },
   restaurant_name:{
     type: String,
     required: true,
@@ -25,6 +21,19 @@ const UserSchema = new mongoose.Schema({
   address:{
     type: String,
     required: true,
+  },
+  opening_time: {
+    type: String,
+    required: function() { return this.status === 'Open'; },
+  },
+  closing_time: {
+    type: String,
+    required: function() { return this.status === 'Open'; },
+  },
+  status: {
+    type: String,
+    enum: ['Open', 'Closed'],
+    default: 'Closed',
   }
 });
 

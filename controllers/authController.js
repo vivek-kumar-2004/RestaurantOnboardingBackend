@@ -1,3 +1,4 @@
+// controllers/authController.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -5,9 +6,8 @@ require("dotenv").config();
 
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role, restaurant_name, address } = req.body;
+        const { name, email, password, restaurant_name, address, opening_time, closing_time, status  } = req.body;
 
-        // Ensure restaurant_name is not null or empty
         if (!restaurant_name || restaurant_name.trim() === '') {
             return res.status(400).json({
                 success: false,
@@ -30,9 +30,11 @@ exports.register = async (req, res) => {
             name,
             email,
             password: hashPassword,
-            role,
             restaurant_name,
-            address
+            address,
+            opening_time,
+            closing_time,
+            status
         });
 
         res.status(200).json({
@@ -68,7 +70,6 @@ exports.login = async (req, res) => {
         const payload = {
             id: user._id,
             email: user.email,
-            role: user.role,
         };
 
         if (await bcrypt.compare(password, user.password)) {
@@ -76,12 +77,9 @@ exports.login = async (req, res) => {
                 expiresIn: '2h',
                 algorithm: 'HS256',
             });
-
             user=user.toObject();
             user.token=token;
             user.password=undefined;
-
-            console.log(user);
 
             res.status(200).json({
                 success: true,
@@ -90,9 +88,11 @@ exports.login = async (req, res) => {
                     id: user._id,
                     name: user.name,
                     email: user.email,
-                    role: user.role,
                     restaurant_name: user.restaurant_name,
-                    address: user.address
+                    address: user.address,
+                    opening_time: user.opening_time,
+                    closing_time: user.closing_time,
+                    status: user.status
                 }
             });
         } else {
@@ -110,5 +110,21 @@ exports.login = async (req, res) => {
     }
 };
 
+exports.userdetails = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ msg: 'User not authenticated' });
+        }
 
+        const user = await User.findById(req.user._id).select('-password');
+        console.log(user)
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
 
+        res.json(user);
+    } catch (err) {
+        console.error('Error fetching user details:', err);
+        res.status(500).send('Server Error');
+    }
+};
