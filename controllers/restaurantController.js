@@ -80,7 +80,7 @@ exports.getMenuItemById = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 data: null,
-                message: "Todo not found",
+                message: "Item not found",
             });
         }
 
@@ -145,20 +145,49 @@ exports.editMenuItem = async (req, res) => {
     }
 };
 
-// Remove menu item
+
+
+// Amenity section
+
 exports.addAmenity = async (req, res) => {
-    const { imageUrl, amenityTitle } = req.body;
     try {
-        let amenity = await Amenity.create({ imageUrl, amenityTitle });
+        const { amenityTitle } = req.body;
+        const file = req.files.file;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded"
+            });
+        }
+
+        const formattypes = ["jpeg", "jpg", "png"];
+        const fileformat = file.name.split(".")[1].toLowerCase();
+
+        if (!formattypes.includes(fileformat)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid file format. Only jpeg, jpg, and png are allowed"
+            });
+        }
+        const response = await cloudinaryFileUpload(file, "uploadFolder");
+
+        let amenity = await Amenity.create({ imageUrl: response.secure_url, amenityTitle });
+
         res.status(200).json({
             success: true,
             message: 'Amenity added successfully',
             data: amenity
         });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
     }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error"
+        });
+    }
+    
 };
 
 exports.getAmenity = async (req, res) => {
@@ -178,6 +207,85 @@ exports.getAmenity = async (req, res) => {
         });
     }
 };
+
+
+exports.getAmenityById = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const response = await Amenity.findById({ _id: id });
+
+        if (!response) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                message: "Amenity not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: response,
+        });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
+};
+
+
+exports.deleteAmenity = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Amenity.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Amenity deleted successfully',
+        });
+    }
+    catch (err) {
+        console.error(err);
+        console.log("error");
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+        });
+    }
+};
+
+
+exports.editAmenity = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { imageUrl, amenityTitle } = req.body;
+
+        const response = await Amenity.findByIdAndUpdate(
+            { _id: id },
+            { imageUrl, amenityTitle },
+        );
+
+        res.status(200).json({
+            success: true,
+            data: response,
+            message: 'Amenity updated successfully',
+        });
+    }
+    catch (err) {
+        console.error(err);
+        console.log("error");
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+        });
+    }
+};
+
+
+
 
 exports.addSpace = async (req, res) => {
     const { imageUrl, spaceTitle } = req.body;

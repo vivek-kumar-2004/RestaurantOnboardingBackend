@@ -8,6 +8,9 @@ const {
     deleteMenuItem,
     addAmenity,
     getAmenity,
+    getAmenityById,
+    editAmenity,
+    deleteAmenity,
     addSpace,
     getSpace,
     updateRestaurantTiming
@@ -20,8 +23,12 @@ router.get('/getmenuItemById/:id', auth, getMenuItemById);
 router.put('/editMenuItem/:id', auth, editMenuItem);
 router.delete('/deleteMenuItem/:id', auth, deleteMenuItem);
 
+
 router.post('/addAmenity', auth, addAmenity);
 router.get('/getAmenity', auth, getAmenity);
+router.get('/getAmenityById/:id', auth, getAmenityById);
+router.put('/editAmenity/:id', auth, editAmenity);
+router.delete('/deleteAmenity/:id',  deleteAmenity);
 
 router.post('/addSpace', auth, addSpace);
 router.get('/getSpace', auth, getSpace);
