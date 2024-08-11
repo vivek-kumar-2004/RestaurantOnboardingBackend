@@ -128,3 +128,27 @@ exports.userdetails = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+
+exports.updateUserDetails = async (req, res) => {
+    try {
+        const userId = req.user._id; // Assuming user is authenticated and user ID is available in req.user
+
+        const {name, email, password, restaurant_name, address, opening_time, closing_time, status } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {name, email, password, restaurant_name, address, opening_time, closing_time, status },
+            { new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Userdetails updated successfully',
+            data: updatedUser
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};

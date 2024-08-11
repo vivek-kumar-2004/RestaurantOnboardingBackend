@@ -11,7 +11,7 @@ async function cloudinaryFileUpload(file, folder) {
     return await cloudinary.uploader.upload(file.tempFilePath, options);
 }
 
-// Add menu item
+// menu management section
 exports.addMenuItem = async (req, res) => {
     try {
         const { itemTitle, price } = req.body;
@@ -52,7 +52,6 @@ exports.addMenuItem = async (req, res) => {
     }
 };
 
-// Get menu items
 exports.getMenuItem = async (req, res) => {
     try {
         const response = await Menu.find({});
@@ -118,7 +117,6 @@ exports.deleteMenuItem = async (req, res) => {
     }
 };
 
-// Update menu item
 exports.editMenuItem = async (req, res) => {
     try {
         const { id } = req.params;
@@ -144,6 +142,7 @@ exports.editMenuItem = async (req, res) => {
         });
     }
 };
+
 
 
 
@@ -208,7 +207,6 @@ exports.getAmenity = async (req, res) => {
     }
 };
 
-
 exports.getAmenityById = async (req, res) => {
     try {
         const id = req.params.id;
@@ -236,7 +234,6 @@ exports.getAmenityById = async (req, res) => {
     }
 };
 
-
 exports.deleteAmenity = async (req, res) => {
     try {
         const { id } = req.params;
@@ -256,7 +253,6 @@ exports.deleteAmenity = async (req, res) => {
         });
     }
 };
-
 
 exports.editAmenity = async (req, res) => {
     try {
@@ -286,19 +282,45 @@ exports.editAmenity = async (req, res) => {
 
 
 
+//Space management section
 
 exports.addSpace = async (req, res) => {
-    const { imageUrl, spaceTitle } = req.body;
     try {
-        let space = await Space.create({ imageUrl, spaceTitle });
+        const { spaceTitle } = req.body;
+        const file = req.files.file;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded"
+            });
+        }
+
+        const formattypes = ["jpeg", "jpg", "png"];
+        const fileformat = file.name.split(".")[1].toLowerCase();
+
+        if (!formattypes.includes(fileformat)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid file format. Only jpeg, jpg, and png are allowed"
+            });
+        }
+        const response = await cloudinaryFileUpload(file, "uploadFolder");
+
+        let space = await Space.create({ imageUrl: response.secure_url, spaceTitle });
+
         res.status(200).json({
             success: true,
             message: 'Space added successfully',
             data: space
         });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error"
+        });
     }
 };
 
@@ -319,6 +341,81 @@ exports.getSpace = async (req, res) => {
         });
     }
 };
+
+exports.getSpaceById = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const response = await Space.findById({ _id: id });
+
+        if (!response) {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                message: "Space not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: response,
+        });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
+};
+
+exports.deleteSpace = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Space.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Space deleted successfully',
+        });
+    }
+    catch (err) {
+        console.error(err);
+        console.log("error");
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+        });
+    }
+};
+exports.editSpace = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { imageUrl, spaceTitle } = req.body;
+
+        const response = await Space.findByIdAndUpdate(
+            { _id: id },
+            { imageUrl, spaceTitle },
+        );
+
+        res.status(200).json({
+            success: true,
+            data: response,
+            message: 'Space updated successfully',
+        });
+    }
+    catch (err) {
+        console.error(err);
+        console.log("error");
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+        });
+    }
+};
+
+
+
 
 
 // Update Restaurant Timings
