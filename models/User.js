@@ -14,12 +14,12 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  restaurant_name:{
+  restaurant_name: {
     type: String,
     required: true,
     unique: true,
   },
-  address:{
+  address: {
     type: String,
     required: true,
   },
@@ -35,6 +35,12 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ['Open', 'Closed'],
     default: 'Closed',
+  },
+  role: {
+    type: String,
+    enum: ['admin', 'restaurant_manager'],
+    required: true,
+    default: 'restaurant_manager'
   }
 });
 

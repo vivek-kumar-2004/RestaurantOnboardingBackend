@@ -6,7 +6,7 @@ require("dotenv").config();
 
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, restaurant_name, address, opening_time, closing_time, status  } = req.body;
+        const { name, email, password, restaurant_name, address, opening_time, closing_time, status, role } = req.body;
 
         if (!restaurant_name || restaurant_name.trim() === '') {
             return res.status(400).json({
@@ -34,7 +34,8 @@ exports.register = async (req, res) => {
             address,
             opening_time,
             closing_time,
-            status
+            status,
+            role // Adding the role to the user
         });
 
         res.status(200).json({
@@ -70,6 +71,7 @@ exports.login = async (req, res) => {
         const payload = {
             id: user._id,
             email: user.email,
+            role: user.role // Adding role to the JWT payload
         };
 
         if (await bcrypt.compare(password, user.password)) {
@@ -77,9 +79,10 @@ exports.login = async (req, res) => {
                 expiresIn: '2h',
                 algorithm: 'HS256',
             });
-            user=user.toObject();
-            user.token=token;
-            user.password=undefined;
+            user = user.toObject();
+            user.token = token;
+            user.password = undefined;
+
 
             res.status(200).json({
                 success: true,
@@ -92,8 +95,9 @@ exports.login = async (req, res) => {
                     address: user.address,
                     opening_time: user.opening_time,
                     closing_time: user.closing_time,
-                    status: user.status
-                }
+                    status: user.status,
+                    role: user.role
+                },
             });
         } else {
             res.status(401).json({
@@ -109,6 +113,7 @@ exports.login = async (req, res) => {
         });
     }
 };
+
 
 exports.userdetails = async (req, res) => {
     try {
@@ -132,7 +137,7 @@ exports.userdetails = async (req, res) => {
 
 exports.updateUserDetails = async (req, res) => {
     try {
-        const userId = req.user._id; // Assuming user is authenticated and user ID is available in req.user
+        const userId = req.user._id; 
 
         const {name, email, password, restaurant_name, address, opening_time, closing_time, status } = req.body;
 
@@ -150,5 +155,16 @@ exports.updateUserDetails = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
+    }
+};
+
+
+exports.getAllRestaurants = async (req, res) => {
+    try {
+        const restaurants = await User.find({ role: 'restaurant_manager' });
+        res.status(200).json(restaurants);
+    } catch (err) {
+        console.error('Error fetching restaurants:', err.message);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 };
