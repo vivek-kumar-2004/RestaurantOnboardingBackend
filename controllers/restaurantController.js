@@ -1,4 +1,5 @@
 // controllers/restaurantController.js
+const mongoose = require('mongoose');
 const Menu = require('../models/Menu');
 const Amenity = require('../models/Amenity');
 const Space = require('../models/Space');
@@ -12,63 +13,157 @@ async function cloudinaryFileUpload(file, folder) {
 }
 
 // menu management section
-exports.addMenuItem = async (req, res) => {
+
+exports.updateMenuOrder = async (req, res) => {
     try {
-        const { itemTitle, price } = req.body;
-        const file = req.files.file;
+        const { items } = req.body; 
 
-        if (!file) {
-            return res.status(400).json({
-                success: false,
-                message: "No file uploaded"
-            });
-        }
+        const bulkOperations = items.map(item => ({
+            updateOne: {
+                filter: { _id: item.id },
+                update: { order: item.order }
+            }
+        }));
 
-        const formattypes = ["jpeg", "jpg", "png"];
-        const fileformat = file.name.split(".")[1].toLowerCase();
-
-        if (!formattypes.includes(fileformat)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid file format. Only jpeg, jpg, and png are allowed"
-            });
-        }
-        const response = await cloudinaryFileUpload(file, "uploadFolder");
-
-        let menu = await Menu.create({ imageUrl: response.secure_url, itemTitle, price });
+        await Menu.bulkWrite(bulkOperations);
 
         res.status(200).json({
             success: true,
-            message: 'Menu item added successfully',
-            data: menu
+            message: "Menu order updated successfully"
         });
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: "Server Error"
         });
     }
 };
 
-exports.getMenuItem = async (req, res) => {
+
+exports.addMenuItem = async (req, res) => {
     try {
-        const response = await Menu.find({});
+        const { itemTitle, price, userId } = req.body;
+
+        // Ensure files are uploaded correctly
+        if (!req.files || !req.files.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded"
+            });
+        }
+
+        const file = req.files.file;
+
+        // Validate file format
+        const allowedFormats = ["jpeg", "jpg", "png"];
+        const fileParts = file.name.split(".");
+
+        if (fileParts.length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid file name. File must have an extension."
+            });
+        }
+
+        const fileFormat = fileParts.pop().toLowerCase();
+
+        if (!allowedFormats.includes(fileFormat)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid file format. Only jpeg, jpg, and png are allowed."
+            });
+        }
+
+        // Upload file to Cloudinary
+        let response;
+        try {
+            response = await cloudinaryFileUpload(file, "uploadFolder");
+            console.log("Cloudinary Response:", response);
+        } catch (uploadError) {
+            console.error("Cloudinary Upload Error:", uploadError);
+            return res.status(500).json({ success: false, message: "Error uploading image" });
+        }
+
+        // Validate userId
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or missing userId"
+            });
+        }
+
+        // Find the highest order value for this user's items
+        const lastItem = await Menu.findOne({ userId }).sort({ order: -1 });
+
+        // Assign order value: highest found order +1 or 0 if no items exist
+        const newOrder = lastItem ? lastItem.order + 1 : 0;
+
+        // Save new menu item with correct order
+        const newMenuItem = new Menu({
+            imageUrl: response.secure_url,
+            itemTitle,
+            price,
+            userId: new mongoose.Types.ObjectId(userId),
+            order: newOrder,  // Ensure new items get correct order
+        });
+
+        await newMenuItem.save();
 
         res.status(200).json({
             success: true,
-            data: response,
+            message: 'Menu item added successfully',
+            data: newMenuItem
+        });
+
+    } catch (err) {
+        console.error("Server Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: err.message
         });
     }
-    catch (err) {
-        console.error(err);
+};
+
+
+exports.getMenuItemByUserId = async (req, res) => {
+    try {
+        const userId = req.user.id; // Extract userId from authenticated user
+
+        // Validate userId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid userId",
+            });
+        }
+
+        // Find menu items that belong to the logged-in user
+        const menuItems = await Menu.find({ userId }).sort({ order: 1 });
+
+        if (!menuItems.length) {
+            return res.status(404).json({
+                success: false,
+                data: [],
+                message: "No menu items found for this user",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: menuItems,
+        });
+    } catch (err) {
+        console.error("Error fetching menu items:", err);
         res.status(500).json({
             success: false,
+            message: "Server error",
             error: err.message,
         });
     }
 };
+
 
 exports.getMenuItemById = async (req, res) => {
     try {
@@ -421,7 +516,7 @@ exports.editSpace = async (req, res) => {
 // Update Restaurant Timings
 exports.updateRestaurantTiming = async (req, res) => {
     try {
-        const userId = req.user._id; // Assuming user is authenticated and user ID is available in req.user
+        const userId = req.user._id; 
 
         const { opening_time, closing_time, status } = req.body;
 

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
     addMenuItem,
-    getMenuItem,
+    getMenuItemByUserId,
     getMenuItemById,
     editMenuItem,
     deleteMenuItem,
@@ -16,16 +16,18 @@ const {
     getSpaceById,
     editSpace,
     deleteSpace,
-    updateRestaurantTiming
+    updateRestaurantTiming,
+    updateMenuOrder
 } = require('../controllers/restaurantController');
 const auth = require('../middlewares/auth');
 
 //routes for menu management
 router.post('/addMenuItem', auth, addMenuItem);
-router.get('/getMenuItem', auth, getMenuItem);
+router.get('/getMenuItemByUserId', auth, getMenuItemByUserId);
 router.get('/getmenuItemById/:id', auth, getMenuItemById);
 router.put('/editMenuItem/:id', auth, editMenuItem);
 router.delete('/deleteMenuItem/:id', auth, deleteMenuItem);
+router.put('/updateMenuOrder', auth, updateMenuOrder);
 
 
 //routes for amenity management
